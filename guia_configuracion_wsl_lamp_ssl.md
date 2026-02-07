@@ -468,3 +468,224 @@ sudo service apache2 restart
 
 > **Nota:** Este manual mantiene el puerto **8080** para alinearse con la documentación base.
 
+# 🛠️ Bitácora de Errores y Soluciones — orderdesk.local (WSL + Apache)
+
+> **Contexto real:**  
+> Windows 10/11 + WSL2 + Ubuntu  
+> Apache escuchando en **puerto 8080**  
+> VirtualHost por nombre: `orderdesk.local`
+
+Este documento registra **únicamente los errores reales**, diagnósticos y **pasos exactos** que permitieron que `orderdesk.local` funcionara correctamente.
+
+---
+
+## ❌ Problema principal
+
+`orderdesk.local` **no cargaba en el navegador**, aunque:
+
+- Apache estaba activo  
+- phpMyAdmin sí cargaba  
+- `curl` respondía correctamente  
+- No había errores visibles en Apache  
+
+---
+
+## 🔍 Síntomas observados
+
+### 1. Apache aparentemente funcionando
+
+```bash
+sudo service apache2 status
+```
+
+Salida esperada:
+
+```
+apache2 is running
+```
+
+---
+
+### 2. Apache escuchando en el puerto correcto
+
+```bash
+ss -ltnp | grep 8080
+```
+
+Salida real:
+
+```
+LISTEN 0 511 *:8080 *:*
+```
+
+✅ Apache escuchando correctamente en 8080
+
+---
+
+### 3. Acceso directo por IP no funcionaba
+
+❌ No cargaba:
+
+```
+http://127.0.0.1:8080
+http://127.0.0.1:8080/index.html
+```
+
+---
+
+### 4. Prueba directa con curl (clave)
+
+```bash
+curl http://orderdesk.local:8080
+```
+
+Resultado:
+- HTML completo devuelto  
+- Sin errores  
+
+✅ Apache funcionaba  
+❌ El problema NO era el servidor  
+
+---
+
+## 🧠 Diagnóstico real (causa raíz)
+
+Apache estaba configurado con **VirtualHost por nombre**, no por IP:
+
+```apache
+ServerName orderdesk.local
+```
+
+Por lo tanto:
+
+- Apache **NO responde correctamente por IP**  
+- Apache **SOLO responde al hostname definido**  
+
+---
+
+## ✅ Solución definitiva
+
+### 1. Verificar archivo `hosts` en Windows
+
+Editar como **Administrador**:
+
+```
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Configuración correcta:
+
+```txt
+127.0.0.1    orderdesk.local
+```
+
+⚠️ Error común detectado:
+- Línea comentada con `#`
+- Host mal escrito
+- Espacios incorrectos
+
+---
+
+### 2. Acceder SOLO por nombre + puerto
+
+✅ URL correcta:
+
+```
+http://orderdesk.local:8080
+```
+
+❌ URLs incorrectas:
+
+```
+http://localhost:8080
+http://127.0.0.1:8080
+```
+
+---
+
+## 🔌 Verificación adicional de red (WSL)
+
+```bash
+ip addr show eth0 | grep inet
+```
+
+Salida real:
+
+```
+inet 172.17.x.x/20 scope global eth0
+```
+
+📌 Confirmación:
+- WSL usa IP interna
+- Windows resuelve el dominio vía `hosts`
+
+---
+
+## ❌ Errores comunes encontrados y solución
+
+### Error: usar `systemctl`
+
+```
+System has not been booted with systemd
+```
+
+✅ Solución:
+```bash
+sudo service apache2 restart
+```
+
+---
+
+### Error: Apache “se queda colgado” al reiniciar
+
+```bash
+sudo service apache2 restart
+```
+
+(no muestra salida)
+
+✅ Solución:
+```bash
+sudo service apache2 status
+```
+
+Apache sí estaba activo, solo era falta de feedback de WSL.
+
+---
+
+### Error: `ERR_CONNECTION_REFUSED`
+
+Causa:
+- Acceder a `http://localhost`
+- Apache escuchando en `8080`
+
+✅ Solución:
+```
+http://orderdesk.local:8080
+```
+
+---
+
+## 🧪 Comandos finales de verificación
+
+```bash
+sudo service apache2 status
+ss -ltnp | grep apache
+curl http://orderdesk.local:8080
+```
+
+---
+
+## ✅ Estado final
+
+- Apache funcionando correctamente  
+- VirtualHost resuelto por nombre  
+- Dominio local operativo  
+- Problema **conceptual**, no técnico  
+
+> **Lección clave:**  
+> Si Apache usa `ServerName`, **no accedas por IP**.
+
+---
+
+🚀 **Fin de la bitácora**
