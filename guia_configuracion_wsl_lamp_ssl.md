@@ -428,6 +428,10 @@ LISTEN 0 4096 0.0.0.0:8080
 
 Abrir en el navegador de Windows:
 
+- Iniciar apache con comando:
+```
+sudo service apache2 start
+```
 - Apache:
 ```
 http://localhost:8080
