@@ -689,3 +689,8 @@ curl http://orderdesk.local:8080
 ---
 
 🚀 **Fin de la bitácora**
+
+ruta: 
+```
+cd /home/orderdesk/web/orderdesk.local/public_html
+```
